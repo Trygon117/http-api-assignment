@@ -1,13 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <title>Our simple HTTP server</title>
   <link rel="stylesheet" type="text/css" href="/style.css">
-  
-  <script>
 
+  <script>
+    //Handles our FETCH response.
+    const handleResponse = async (response) => {
+
+      //Grab the content section
+      const content = document.querySelector('#content');
+
+      //Based on the status code, display something
+      switch (response.status) {
+        case 200: //success
+          content.innerHTML = `<b>Success</b>`;
+          break;
+        case 400: //bad request
+          content.innerHTML = `<b>Bad Request</b>`;
+          break;
+        case 401:
+          content.innerHTML = `<b>Unauthorized</b>`;
+          break;
+        case 403:
+          content.innerHTML = `<b>Forbidden</b>`;
+          break;
+        case 404:
+          content.innerHTML = `<b>Not Found</b>`;
+          break;
+        case 500:
+          content.innerHTML = `<b>Internal</b>`;
+          break;
+        case 501:
+          content.innerHTML = `<b>Not Implemented</b>`;
+          break;
+        default: //any other status code
+          content.innerHTML = `Error code not implemented by client.`;
+          break;
+      }
+
+      dataType = response.headers.get('Content-Type');
+      //console.log(dataType);
+
+      if (dataType === 'application/json') {
+        //Parse the response to json.
+        let obj = await response.json();
+
+        console.log(obj);
+
+        //If we have a message, display it.
+        if (obj.message) {
+          content.innerHTML += `<p>Message: ${obj.message}</p>`;
+        }
+      } else {
+        //Parse the response to text
+        let obj = await response.text();
+
+        console.log(obj);
+
+        const parsedResponse = new window.DOMParser().parseFromString(obj, 'text/xml');
+
+        //If we have a message, display it
+        let message = parsedResponse.querySelector('message').textContent;
+        content.innerHTML += `<p>Message: ${message}</p>`;
+      }
+    };
+
+    //function to send request.
+    const requestUpdate = async (page, type) => {
+
+      //Await our fetch response. Go to the URL, use the right method, and attach the headers.
+      let response = await fetch(page.value, {
+        headers: {
+          'Content-Type': type.value,
+          'Accept': type.value,
+        },
+      });
+
+      //console.log(response);
+
+      //Once we have our response, send it into handle response.
+      handleResponse(response, type.value);
+    };
+
+    const init = () => {
+      const page = document.querySelector('#page');
+      const type = document.querySelector('#type');
+      const sendButton = document.querySelector('#send');
+
+      const getResponse = (e) => {
+        e.preventDefault();
+        requestUpdate(page, type);
+        return false;
+      };
+
+      sendButton.addEventListener('click', getResponse);
+
+    };
+
+    window.onload = init;
   </script>
 </head>
+
 <body>
   <section id="top">
     <h3>Status Code Tests</h3>
@@ -29,4 +124,5 @@
   <section id="content">
   </section>
 </body>
+
 </html>
